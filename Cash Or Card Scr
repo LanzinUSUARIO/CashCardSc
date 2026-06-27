@@ -354,7 +354,7 @@ local C = {
     gold        = Color3.fromRGB(160, 255, 90),
 }
 
-local LOGO_IMG  = "rbxassetid://87742083119774"
+local LOGO_IMG  = "rbxassetid://107296265784270"
 local ALERT_SFX = "rbxassetid://101314628073587"
 
 local function corner(obj, rad) local c = Instance.new("UICorner", obj); c.CornerRadius = UDim.new(0, rad or 8); return c end
