@@ -12,13 +12,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
 
--- Suprime popup de erro de teleporte (erro 772 e similares)
-pcall(function()
-    TeleportService.TeleportInitFailed:Connect(function()
-        -- silenciado intencionalmente
-    end)
-end)
-
 local function joinParts(t) return table.concat(t) end
 local _P1 = "https://cash-or-card-notifier-production.up.railway.app"
 local _P2 = "CashOrCard"
@@ -354,7 +347,7 @@ local C = {
     gold        = Color3.fromRGB(160, 255, 90),
 }
 
-local LOGO_IMG  = "rbxassetid://107296265784270"
+local LOGO_IMG  = "rbxassetid://125193254083617"
 local ALERT_SFX = "rbxassetid://101314628073587"
 
 local function corner(obj, rad) local c = Instance.new("UICorner", obj); c.CornerRadius = UDim.new(0, rad or 8); return c end
@@ -537,53 +530,35 @@ function LoadMainUI()
     local StatForces=StatCard(StatsPage,"FC","FORCE JOINS")
     local StatSteals=StatCard(StatsPage,"ST","BRAINROTS STOLEN")
     local function UpdateStats() StatBrainrots.Text=tostring(brainrotCount); StatJoins.Text=tostring(joinCount); StatForces.Text=tostring(forceCount); StatSteals.Text=tostring(stealCount); BrainrotCountLbl.Text="Brainrots received: "..brainrotCount end
-
-    -- SMART JOIN (sem popup de erro)
     local function SmartJoin(jobId, statusLbl)
         task.spawn(function()
-            if not jobId or jobId == "" then return end
-            if statusLbl then statusLbl.Text = "Checking..."; statusLbl.TextColor3 = C.textMuted end
-            local alive, playing, max = isServerAliveCached(jobId)
-            if not alive then
-                if statusLbl then statusLbl.Text = "Server closed"; statusLbl.TextColor3 = C.danger end
-                return
-            end
-            if statusLbl then statusLbl.Text = playing.."/"..max.." - Joining..."; statusLbl.TextColor3 = C.success end
-            joinCount = joinCount + 1; UpdateStats()
-            for i = 1, 5 do
-                pcall(function()
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, jobId, LocalPlayer)
-                end)
-                task.wait(0.5)
-            end
+            if not jobId or jobId=="" then return end
+            if statusLbl then statusLbl.Text="Checking..."; statusLbl.TextColor3=C.textMuted end
+            local alive,playing,max=isServerAliveCached(jobId)
+            if not alive then if statusLbl then statusLbl.Text="Server closed"; statusLbl.TextColor3=C.danger end; return end
+            if statusLbl then statusLbl.Text=playing.."/"..max.." - Joining..."; statusLbl.TextColor3=C.success end
+            joinCount=joinCount+1; UpdateStats()
+            for i=1,5 do pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId,jobId,LocalPlayer) end); task.wait(0.5) end
         end)
     end
-
-    -- SUPER FORCE JOIN (sem popup de erro)
     local function SuperForceJoin(jobId, statusLbl)
         task.spawn(function()
-            if not jobId or jobId == "" then return end
-            if statusLbl then statusLbl.Text = "FORCE active..."; statusLbl.TextColor3 = C.warning end
-            forceCount = forceCount + 1; UpdateStats()
-            local attempts = 0
+            if not jobId or jobId=="" then return end
+            if statusLbl then statusLbl.Text="FORCE active..."; statusLbl.TextColor3=C.warning end
+            forceCount=forceCount+1; UpdateStats()
+            local attempts=0
             while STATE.active do
-                attempts += 1
-                if attempts % 20 == 0 then
-                    local alive, p, m = isServerAliveCached(jobId)
-                    if not alive then
-                        if statusLbl then statusLbl.Text = "Server closed"; statusLbl.TextColor3 = C.danger end
-                        return
-                    end
-                    if statusLbl then statusLbl.Text = "FORCE ("..attempts..") - "..p.."/"..m end
+                attempts+=1
+                if attempts%20==0 then
+                    local alive,p,m=isServerAliveCached(jobId)
+                    if not alive then if statusLbl then statusLbl.Text="Server closed"; statusLbl.TextColor3=C.danger end; return end
+                    if statusLbl then statusLbl.Text="FORCE ("..attempts..") - "..p.."/"..m end
                 end
-                pcall(function()
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, jobId, LocalPlayer)
-                end)
+                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId,jobId,LocalPlayer) end)
                 task.wait(0.1)
             end
         end)
     end
-
     local RenderedIDs={}
     local HighlightAJEnabled=false
     local function CreateLogEntry(jobId, name, genStr, numVal)
@@ -831,11 +806,16 @@ function LoadMainUI()
     task.spawn(function()
         setStatus("Online",C.success)
         clearLogsAPI()
+        -- Inicializa o lastLatestId sem processar entradas antigas
         for i=1,3 do
             local body=httpGet(buildURL("/api/latest"))
             if body and body~="" then local data=jsonDecode(body); if data and data.id then lastLatestId=data.id end end
-            task.wait(1)
+            task.wait(0.5)
         end
+        -- ══════════════════════════════════════════════════════
+        --   POLLING LOOP — delay reduzido de 6-10s para 1s
+        --   para receber brainrots quase em tempo real
+        -- ══════════════════════════════════════════════════════
         while STATE.active do
             local body=httpGet(buildURL("/api/latest"))
             if body and body~="" then
@@ -851,7 +831,7 @@ function LoadMainUI()
                     CreateLogEntry(jobId, name, genStr, numVal)
                 end
             end
-            task.wait(6+math.random(0,4))
+            task.wait(1) -- ✅ CORRIGIDO: era task.wait(6+math.random(0,4)) → agora 1s
         end
     end)
 
