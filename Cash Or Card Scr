@@ -13,7 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
 
 local function joinParts(t) return table.concat(t) end
-local _P1 = "https://cash-or-card-notifier-production.up.railway.app"
+local _P1 = "cashorcardapi-production.up.railway.app"
 local _P2 = "CashOrCard"
 local _P3 = "CashCardNotifier-v1"
 local _P4 = joinParts({
